@@ -1,0 +1,364 @@
+openapi: 3.0.3
+info:
+  title: CareConnect API
+  version: 1.0.0
+  description: |
+    On-demand home care platform connecting older adults with verified caregivers.
+
+    ## Authentication
+    All protected endpoints require a JWT access token in the Authorization header:
+    ```
+    Authorization: Bearer <access_token>
+    ```
+    Obtain tokens via POST /auth/register or POST /auth/login.
+
+  contact:
+    name: CareConnect Team
+    email: team@careconnect.com
+
+servers:
+  - url: http://localhost:3000/api/v1
+    description: Development server
+
+tags:
+  - name: Auth
+    description: Registration, login, and token management
+  - name: Users
+    description: User profile management
+  - name: Caregivers
+    description: Caregiver profiles, certifications, and availability
+  - name: Appointments
+    description: Booking, managing, and tracking care appointments
+  - name: Reviews
+    description: Post-appointment rating and feedback
+  - name: Conversations
+    description: Real-time messaging between users
+  - name: Notifications
+    description: User notification management
+  - name: Addresses
+    description: User address management
+  - name: Admin
+    description: Platform administration and analytics
+
+paths:
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Create a new account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password, firstName, lastName, role]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: jane.doe@example.com
+                password:
+                  type: string
+                  minLength: 8
+                  example: SecurePass123!
+                firstName:
+                  type: string
+                  example: Jane
+                lastName:
+                  type: string
+                  example: Doe
+                phone:
+                  type: string
+                  example: "212-555-0100"
+                role:
+                  type: string
+                  enum: [care_receiver, caregiver]
+      responses:
+        201:
+          description: Account created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                    example: 201
+                  message:
+                    type: string
+                    example: Account created
+                  user:
+                    $ref: '#/components/schemas/UserSummary'
+                  accessToken:
+                    type: string
+                  refreshToken:
+                    type: string
+        409:
+          description: Email already registered
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Log in with email and password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+      responses:
+        200:
+          description: Login successful
+        401:
+          description: Invalid credentials
+
+  /auth/me:
+    get:
+      tags: [Auth]
+      summary: Get current user profile
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Current user data
+
+  /appointments:
+    post:
+      tags: [Appointments]
+      summary: Create a new appointment request
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAppointment'
+      responses:
+        201:
+          description: Appointment created
+    get:
+      tags: [Appointments]
+      summary: List appointments for current user
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [pending, accepted, in_progress, completed, cancelled, no_show]
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 20
+      responses:
+        200:
+          description: Paginated appointment list
+
+  /appointments/{id}/accept:
+    post:
+      tags: [Appointments]
+      summary: Caregiver accepts an appointment
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Appointment accepted
+
+  /appointments/{id}/start:
+    post:
+      tags: [Appointments]
+      summary: Caregiver checks in to start appointment
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Appointment started
+
+  /appointments/{id}/complete:
+    post:
+      tags: [Appointments]
+      summary: Caregiver marks appointment as completed
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Appointment completed
+
+  /caregivers:
+    get:
+      tags: [Caregivers]
+      summary: Search caregivers with filters
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: lat
+          schema:
+            type: number
+          description: Latitude for proximity search
+        - in: query
+          name: lon
+          schema:
+            type: number
+          description: Longitude for proximity search
+        - in: query
+          name: serviceLevel
+          schema:
+            type: string
+            enum: [CNA, RNA, NP]
+        - in: query
+          name: dayOfWeek
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 6
+      responses:
+        200:
+          description: List of matching caregivers
+
+  /reviews:
+    post:
+      tags: [Reviews]
+      summary: Submit a review for a completed appointment
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateReview'
+      responses:
+        201:
+          description: Review created
+
+  /conversations:
+    get:
+      tags: [Conversations]
+      summary: List user's conversations
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: List of conversations with last message
+
+  /admin/dashboard:
+    get:
+      tags: [Admin]
+      summary: Get platform dashboard statistics
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Platform stats (users, appointments, revenue)
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    UserSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        role:
+          type: string
+
+    CreateAppointment:
+      type: object
+      required: [serviceTypeId, addressId, scheduledStart, scheduledEnd]
+      properties:
+        serviceTypeId:
+          type: integer
+          example: 1
+        addressId:
+          type: integer
+          example: 3
+        scheduledStart:
+          type: string
+          format: date-time
+          example: "2026-04-15T09:00:00Z"
+        scheduledEnd:
+          type: string
+          format: date-time
+          example: "2026-04-15T13:00:00Z"
+        notes:
+          type: string
+          example: "Patient needs mobility assistance and meal prep"
+        tasks:
+          type: array
+          items:
+            type: object
+            properties:
+              description:
+                type: string
+              sortOrder:
+                type: integer
+
+    CreateReview:
+      type: object
+      required: [appointmentId, overallRating]
+      properties:
+        appointmentId:
+          type: integer
+        overallRating:
+          type: integer
+          minimum: 1
+          maximum: 5
+        punctuality:
+          type: integer
+          minimum: 1
+          maximum: 5
+        professionalism:
+          type: integer
+          minimum: 1
+          maximum: 5
+        skillLevel:
+          type: integer
+          minimum: 1
+          maximum: 5
+        comment:
+          type: string

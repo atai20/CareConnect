@@ -1,0 +1,46 @@
+{
+  "name": "careconnect-backend",
+  "version": "1.0.0",
+  "description": "CareConnect - On-demand home care platform API",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "migrate": "knex migrate:latest",
+    "migrate:rollback": "knex migrate:rollback",
+    "seed": "knex seed:run",
+    "test": "jest --runInBand --forceExit",
+    "test:watch": "jest --watch",
+    "lint": "eslint src/ --ext .js"
+  },
+  "keywords": ["healthcare", "caregiving", "home-care", "on-demand", "marketplace"],
+  "author": "CareConnect Team - CSC33600",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.6",
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.3.2",
+    "helmet": "^8.1.0",
+    "hpp": "^0.2.3",
+    "joi": "^18.1.2",
+    "jsonwebtoken": "^9.0.3",
+    "knex": "^3.2.8",
+    "morgan": "^1.10.1",
+    "multer": "^2.1.1",
+    "mysql2": "^3.20.0",
+    "socket.io": "^4.8.3",
+    "swagger-ui-express": "^5.0.1",
+    "uuid": "^13.0.0",
+    "xss-clean": "^0.1.4",
+    "yamljs": "^0.3.0"
+  },
+  "devDependencies": {
+    "eslint": "^10.1.0",
+    "jest": "^30.3.0",
+    "nodemon": "^3.1.14",
+    "supertest": "^7.2.2"
+  }
+}
