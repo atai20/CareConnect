@@ -9,8 +9,21 @@ const list = catchAsync(async (req, res) => {
   res.json({ status: 200, ...buildPaginationResponse(data, total, page, limit) });
 });
 
+// GET /users/profile — returns the authenticated user's own profile
+const getProfile = catchAsync(async (req, res) => {
+  const user = await UserModel.findById(req.user.id);
+  if (!user) throw ApiError.notFound('User not found');
+
+  const { password_hash, ...safeUser } = user;
+  res.json({ status: 200, data: safeUser });
+});
+
 const getById = catchAsync(async (req, res) => {
-  const user = await UserModel.findById(req.params.id);
+  // Guard: if :id isn't a valid integer, reject early instead of querying with NaN
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) throw ApiError.badRequest('Invalid user ID');
+
+  const user = await UserModel.findById(id);
   if (!user) throw ApiError.notFound('User not found');
 
   const { password_hash, ...safeUser } = user;
@@ -37,4 +50,4 @@ const deactivate = catchAsync(async (req, res) => {
   res.status(204).send();
 });
 
-module.exports = { list, getById, update, deactivate };
+module.exports = { list, getProfile, getById, update, deactivate };

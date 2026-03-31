@@ -78,7 +78,7 @@ const CaregiverModel = {
       });
     }
 
-    if (dayOfWeek !== undefined) {
+    if (dayOfWeek !== undefined && !isNaN(dayOfWeek)) {
       query.whereExists(function () {
         this.select('*')
           .from('caregiver_availability as ca')
@@ -94,7 +94,7 @@ const CaregiverModel = {
     ];
 
     // If coordinates provided, add distance calculation
-    if (lat && lon) {
+    if (lat && lon && !isNaN(lat) && !isNaN(lon)) {
       const haversine = `(6371 * ACOS(LEAST(1,
         COS(RADIANS(?)) * COS(RADIANS(a.latitude)) *
         COS(RADIANS(a.longitude) - RADIANS(?)) +

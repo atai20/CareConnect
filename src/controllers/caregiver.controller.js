@@ -4,9 +4,23 @@ const ApiError = require('../utils/ApiError');
 
 const search = catchAsync(async (req, res) => {
   const { lat, lon, serviceLevel, dayOfWeek, page, limit } = req.query;
+
+  // Only parse numeric params if they were actually provided.
+  // parseFloat(undefined) = NaN, which would poison our SQL queries.
+  const parsedLat = lat !== undefined ? parseFloat(lat) : undefined;
+  const parsedLon = lon !== undefined ? parseFloat(lon) : undefined;
+  const parsedDay = dayOfWeek !== undefined ? parseInt(dayOfWeek, 10) : undefined;
+
+  // Validate that parsed numbers are actually numbers
+  if (parsedLat !== undefined && isNaN(parsedLat)) throw ApiError.badRequest('Invalid latitude');
+  if (parsedLon !== undefined && isNaN(parsedLon)) throw ApiError.badRequest('Invalid longitude');
+  if (parsedDay !== undefined && (isNaN(parsedDay) || parsedDay < 0 || parsedDay > 6)) {
+    throw ApiError.badRequest('dayOfWeek must be 0-6 (Sunday=0, Saturday=6)');
+  }
+
   const results = await CaregiverModel.search({
-    lat: parseFloat(lat), lon: parseFloat(lon),
-    serviceLevel, dayOfWeek: parseInt(dayOfWeek, 10),
+    lat: parsedLat, lon: parsedLon,
+    serviceLevel, dayOfWeek: parsedDay,
     page: parseInt(page, 10) || 1, limit: parseInt(limit, 10) || 20,
   });
   res.json({ status: 200, data: results });

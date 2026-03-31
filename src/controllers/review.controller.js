@@ -67,4 +67,23 @@ const remove = catchAsync(async (req, res) => {
   res.status(204).send();
 });
 
-module.exports = { create, getById, update, remove };
+const listForCaregiver = catchAsync(async (req, res) => {
+  const caregiverId = parseInt(req.params.id, 10);
+  if (isNaN(caregiverId)) throw ApiError.badRequest('Invalid caregiver ID');
+
+  // Resolve caregiver profile → user_id for the reviewee lookup
+  const db = require('../config/database');
+  const profile = await db('caregiver_profiles').where({ id: caregiverId }).first();
+  if (!profile) throw ApiError.notFound('Caregiver not found');
+
+  const { page, limit } = req.query;
+  const { data, total } = await ReviewModel.listForUser(profile.user_id, {
+    page: parseInt(page, 10) || 1,
+    limit: parseInt(limit, 10) || 20,
+  });
+
+  const { buildPaginationResponse } = require('../utils/pagination');
+  res.json({ status: 200, ...buildPaginationResponse(data, total, parseInt(page, 10) || 1, parseInt(limit, 10) || 20) });
+});
+
+module.exports = { create, getById, update, remove, listForCaregiver };
